@@ -1,4 +1,4 @@
-module rerun
+module github.com/CodeHariK/rerun
 
 go 1.22.4
 
