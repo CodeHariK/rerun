@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/CodeHariK/rerun/helper"
+	"github.com/codeharik/rerun/helper"
 
 	"github.com/fsnotify/fsnotify"
 )
