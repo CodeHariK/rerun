@@ -25,7 +25,10 @@ var (
 func main() {
 	if len(os.Args) < 3 {
 		fmt.Println("Usage: go run main.go <watch directory> <run command> <kill ports>")
-		fmt.Println("Usage: go run main.go ../Hello \"go run Hello/main.go\" 8080,3000")
+		fmt.Println("Usage: go run main.go ../Hello \"go run ../Hello/main.go\" 8080,3000")
+		fmt.Println()
+		fmt.Println("Usage: rerun <watch directory> <run command> <kill ports>")
+		fmt.Println("Usage: rerun ../Hello \"go run ../Hello/main.go\" 8080,3000")
 		return
 	}
 
@@ -114,37 +117,15 @@ func portKiller(killPorts []int) {
 
 func runCommand(command string, killPort []int) {
 	helper.ClearScreen()
+
 	atomic.AddInt32(&counter, 1)
 	fmt.Printf("\n%d %s\n\n", atomic.LoadInt32(&counter), command)
 
 	portKiller(killPort)
 
-	// if currentCmd != nil && currentCmd.Process != nil {
-	// 	fmt.Println("----")
-	// 	fmt.Println(currentCmd.Process.Pid)
-	// 	fmt.Println(currentCmd.Process)
-	// 	fmt.Println("----")
-	// 	currentCmd.Process.Signal(syscall.SIGINT)
-	// 	currentCmd.Process.Signal(os.Interrupt)
-	// 	currentCmd.Process.Signal(os.Kill)
-	// }
-	// // Cancel the previous command if it's still running
-	// if currentCmd != nil && currentCmd.Process != nil {
-	// 	log.Printf("Attempting to kill process with PID: %d", currentCmd.Process.Pid)
-	// 	if err := currentCmd.Process.Kill(); err != nil {
-	// 		log.Printf("failed to kill process: %v", err)
-	// 	} else {
-	// 		log.Printf("Successfully killed process with PID: %d", currentCmd.Process.Pid)
-	// 	}
-	// 	if cancelFunc != nil {
-	// 		cancelFunc()
-	// 	}
-	// 	log.Printf("Successfully cancelled process with PID: %d", currentCmd.Process.Pid)
-
-	// 	time.Sleep(time.Second * 1)
-
-	// 	currentCmd = nil
-	// }
+	// TODO : Can't get process
+	// Cancel the previous command if it's still running
+	// killProcess()
 
 	// Create a new context with cancellation
 	ctx, cancel := context.WithCancel(context.Background())
@@ -183,3 +164,32 @@ func runCommand(command string, killPort []int) {
 	// 	}
 	// }()
 }
+
+// func killProcess() {
+// 	if currentCmd != nil && currentCmd.Process != nil {
+// 		fmt.Println("----")
+// 		fmt.Println(currentCmd.Process.Pid)
+// 		fmt.Println(currentCmd.Process)
+// 		fmt.Println("----")
+// 		currentCmd.Process.Signal(syscall.SIGINT)
+// 		currentCmd.Process.Signal(os.Interrupt)
+// 		currentCmd.Process.Signal(os.Kill)
+// 	}
+
+// 	if currentCmd != nil && currentCmd.Process != nil {
+// 		log.Printf("Attempting to kill process with PID: %d", currentCmd.Process.Pid)
+// 		if err := currentCmd.Process.Kill(); err != nil {
+// 			log.Printf("failed to kill process: %v", err)
+// 		} else {
+// 			log.Printf("Successfully killed process with PID: %d", currentCmd.Process.Pid)
+// 		}
+// 		if cancelFunc != nil {
+// 			cancelFunc()
+// 		}
+// 		log.Printf("Successfully cancelled process with PID: %d", currentCmd.Process.Pid)
+
+// 		time.Sleep(time.Second * 1)
+
+// 		currentCmd = nil
+// 	}
+// }
