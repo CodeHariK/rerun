@@ -113,7 +113,7 @@ func portKiller(killPorts []int) {
 }
 
 func runCommand(command string, killPort []int) {
-	// helper.ClearScreen()
+	helper.ClearScreen()
 	atomic.AddInt32(&counter, 1)
 	fmt.Printf("\n%d %s\n\n", atomic.LoadInt32(&counter), command)
 
