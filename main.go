@@ -1,14 +1,15 @@
 package main
 
 import (
-	"context"
+	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
-	"os/exec"
-	"path/filepath"
+	"os/signal"
+	"sync"
 	"sync/atomic"
+	"syscall"
+	"time"
 
 	"github.com/codeharik/rerun/helper"
 
@@ -16,26 +17,44 @@ import (
 )
 
 var (
-	currentCmd *exec.Cmd
-	cancelFunc context.CancelFunc
-	counter    int32 = 0
+	shellProcess *os.Process
+	childProcess *os.Process
+	counter      int32 = 0
 )
 
 func main() {
-	if len(os.Args) < 3 {
-		fmt.Println("Usage: go run main.go <watch directory> <run command> <kill ports>")
-		fmt.Println("Usage: go run main.go ../Hello \"go run ../Hello/main.go\" 8080,3000")
+	flagKillPorts := flag.String("k", "", "Optional Kill Ports")
+	flagReRunDelay := flag.Int("t", -1, "Optional Rerun Delay Time in Milliseconds[Min 100]")
+
+	flag.Parse()
+
+	nonFlagArgs := flag.Args()
+
+	if len(nonFlagArgs) < 2 {
+		fmt.Println("ReRun: Monitor a directory and automatically execute a command when files change, or rerun the command on a set interval.")
+		flag.PrintDefaults()
 		fmt.Println()
-		fmt.Println("Usage: rerun <watch directory> <run command> <kill ports>")
-		fmt.Println("Usage: rerun ../Hello \"go run ../Hello/main.go\" 8080,3000")
+		fmt.Println("Usage: go run main.go [-k optional kill ports] [-t optional rerun delay time] <watch directory> <run command>")
+		fmt.Println("Usage: go run main.go ../Hello \"go run ../Hello/main.go\"")
+		fmt.Println("Usage: go run main.go -k=8080,3000 -t=4000 ../Hello \"go run ../Hello/main.go\"")
+		fmt.Println()
+		fmt.Println("Usage: rerun [-k optional kill ports] [-t optional rerun delay time] <watch directory> <run command>")
+		fmt.Println("Usage: rerun -k=8080,3000 -t=4000 ../Hello \"go run ../Hello/main.go\"")
+		fmt.Println("Usage: rerun ../Hello \"go run ../Hello/main.go\"")
 		return
 	}
 
-	directory := os.Args[1]
-	command := os.Args[2]
+	killPortsString := *flagKillPorts
+	rerunTimer := time.Duration(*flagReRunDelay) * 1000000
+	if rerunTimer > 0 && rerunTimer < time.Millisecond*100 {
+		log.Fatal("Min 100 milliseconds delay required")
+	}
+
+	directory := flag.Arg(0)
+	command := flag.Arg(1)
 	killPorts := []int{}
-	if len(os.Args) >= 3 {
-		k, err := helper.ParseStringInts(os.Args[3])
+	if killPortsString != "" {
+		k, err := helper.ParseStringInts(killPortsString)
 		if err == nil {
 			killPorts = k
 		}
@@ -47,10 +66,27 @@ func main() {
 	}
 	defer watcher.Close()
 
-	done := make(chan bool)
+	done := make(chan os.Signal)
+	defer close(done)
+	signal.Notify(done, syscall.SIGINT, os.Kill, os.Interrupt)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	defer wg.Wait()
+
+	if rerunTimer >= time.Millisecond*100 {
+		helper.TickerFunction(
+			done,
+			rerunTimer,
+			func() {
+				runCommand(command, killPorts, rerunTimer)
+			},
+		)
+	}
 
 	go func() {
-		runCommand(command, killPorts)
+		defer wg.Done()
+		runCommand(command, killPorts, rerunTimer)
 		for {
 			select {
 			case event, ok := <-watcher.Events:
@@ -60,15 +96,15 @@ func main() {
 
 				if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
 					fmt.Println("modified file:", event.Name)
-					runCommand(command, killPorts)
+					runCommand(command, killPorts, rerunTimer)
 				}
 
 				if event.Op&fsnotify.Create == fsnotify.Create {
 					info, err := os.Stat(event.Name)
 					if err == nil && info.IsDir() {
-						err = addRecursive(watcher, event.Name)
+						err = helper.AddRecursive(watcher, event.Name)
 						if err != nil {
-							log.Println("error adding directory:", err)
+							fmt.Println("error adding directory:", err)
 						}
 					}
 				}
@@ -77,119 +113,36 @@ func main() {
 					return
 				}
 				fmt.Println("error:", err)
+			case <-done:
+				if err := watcher.Close(); err != nil {
+					fmt.Println("Failed to stop watcher")
+				}
+				return
 			}
 		}
 	}()
 
-	err = addRecursive(watcher, directory)
+	err = helper.AddRecursive(watcher, directory)
 	if err != nil {
 		log.Fatal(err)
 	}
-	<-done
 }
 
-func addRecursive(watcher *fsnotify.Watcher, directory string) error {
-	return filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			err = watcher.Add(path)
-			if err != nil {
-				return err
-			}
-			fmt.Println("Watching:", path)
-		}
-		return nil
-	})
-}
-
-func portKiller(killPorts []int) {
-	for _, i := range killPorts {
-		fmt.Printf("Kill any process using port %d\n", i)
-		killCmd := exec.CommandContext(context.Background(), "sh", "-c", fmt.Sprintf("lsof -ti tcp:%d | xargs kill -9", i))
-		if err := killCmd.Run(); err != nil {
-			log.Printf("failed to kill process on port 8080: %v", err)
-		}
-	}
-}
-
-func runCommand(command string, killPort []int) {
+func runCommand(command string, killPort []int, t time.Duration) {
 	helper.ClearScreen()
 
 	atomic.AddInt32(&counter, 1)
-	fmt.Printf("\n%d %s\n\n", atomic.LoadInt32(&counter), command)
+	fmt.Printf("\n%d %s [Rerun:%s]\n\n", atomic.LoadInt32(&counter), command, t)
 
-	portKiller(killPort)
+	helper.KillProcess(shellProcess)
+	helper.KillProcess(childProcess)
+	helper.PortKiller(killPort)
 
-	// TODO : Can't get process
-	// Cancel the previous command if it's still running
-	// killProcess()
+	cmd := helper.ExecCommand(command)
 
-	// Create a new context with cancellation
-	ctx, cancel := context.WithCancel(context.Background())
-	cancelFunc = cancel
+	helper.Spinner(time.Millisecond * 400)
 
-	// parts := strings.Fields(command)
-	// fn := parts[0]
-	// args := parts[1:]
-	// cmd := exec.CommandContext(ctx, fn, args...)
-	cmd := exec.CommandContext(ctx, "sh", "-c", command)
+	helper.CopyProcess(cmd, &shellProcess, &childProcess)
 
-	// Create pipes to capture the command's stdout and stderr
-	stdoutPipe, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Fatalf("failed to create stdout pipe: %v", err)
-	}
-	stderrPipe, err := cmd.StderrPipe()
-	if err != nil {
-		log.Fatalf("failed to create stderr pipe: %v", err)
-	}
-
-	fmt.Println("Start the command")
-	if err := cmd.Start(); err != nil {
-		log.Fatalf("failed to start command: %v", err)
-	}
-	currentCmd = cmd
-
-	// Copy the command's stdout and stderr to the current process's stdout and stderr
-	go io.Copy(os.Stdout, stdoutPipe)
-	go io.Copy(os.Stderr, stderrPipe)
-
-	// Wait for the command to finish
-	// go func() {
-	// 	err = cmd.Wait()
-	// 	if err != nil {
-	// 		log.Println("Error running command:", err)
-	// 	}
-	// }()
+	fmt.Printf("...\n\n")
 }
-
-// func killProcess() {
-// 	if currentCmd != nil && currentCmd.Process != nil {
-// 		fmt.Println("----")
-// 		fmt.Println(currentCmd.Process.Pid)
-// 		fmt.Println(currentCmd.Process)
-// 		fmt.Println("----")
-// 		currentCmd.Process.Signal(syscall.SIGINT)
-// 		currentCmd.Process.Signal(os.Interrupt)
-// 		currentCmd.Process.Signal(os.Kill)
-// 	}
-
-// 	if currentCmd != nil && currentCmd.Process != nil {
-// 		log.Printf("Attempting to kill process with PID: %d", currentCmd.Process.Pid)
-// 		if err := currentCmd.Process.Kill(); err != nil {
-// 			log.Printf("failed to kill process: %v", err)
-// 		} else {
-// 			log.Printf("Successfully killed process with PID: %d", currentCmd.Process.Pid)
-// 		}
-// 		if cancelFunc != nil {
-// 			cancelFunc()
-// 		}
-// 		log.Printf("Successfully cancelled process with PID: %d", currentCmd.Process.Pid)
-
-// 		time.Sleep(time.Second * 1)
-
-// 		currentCmd = nil
-// 	}
-// }
