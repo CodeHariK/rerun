@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"sync/atomic"
 
 	"github.com/codeharik/rerun/helper"
@@ -131,10 +130,11 @@ func runCommand(command string, killPort []int) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancelFunc = cancel
 
-	parts := strings.Fields(command)
-	fn := parts[0]
-	args := parts[1:]
-	cmd := exec.CommandContext(ctx, fn, args...)
+	// parts := strings.Fields(command)
+	// fn := parts[0]
+	// args := parts[1:]
+	// cmd := exec.CommandContext(ctx, fn, args...)
+	cmd := exec.CommandContext(ctx, "sh", "-c", command)
 
 	// Create pipes to capture the command's stdout and stderr
 	stdoutPipe, err := cmd.StdoutPipe()
