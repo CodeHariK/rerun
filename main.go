@@ -4,43 +4,38 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
-	"os/signal"
 	"sync"
-	"sync/atomic"
-	"syscall"
 	"time"
 
 	"github.com/codeharik/rerun/helper"
-
-	"github.com/fsnotify/fsnotify"
+	"github.com/codeharik/rerun/spider"
+	"github.com/codeharik/rerun/types"
+	"github.com/codeharik/rerun/watcher"
 )
 
-var (
-	shellProcess *os.Process
-	childProcess *os.Process
-	counter      int32 = 0
-)
+const version = "v0.1.2"
 
 func main() {
 	flagKillPorts := flag.String("k", "", "Optional Kill Ports")
-	flagReRunDelay := flag.Int("t", -1, "Optional Rerun Delay Time in Milliseconds[Min 100]")
+	flagReRunDelay := flag.Int("t", -1, "Optional Rerun Delay Time in Milliseconds [Min 100]")
 
 	flag.Parse()
 
 	nonFlagArgs := flag.Args()
 
 	if len(nonFlagArgs) < 2 {
-		fmt.Println("ReRun: Monitor a directory and automatically execute a command when files change, or rerun the command on a set interval.")
+		fmt.Printf("ReRun %s : Monitor a directory and automatically execute a command when directory change, or rerun the command on a set interval.\n", version)
 		flag.PrintDefaults()
 		fmt.Println()
+		fmt.Println("SPIDER : http://localhost:9753")
+		fmt.Println()
 		fmt.Println("Usage: go run main.go [-k optional kill ports] [-t optional rerun delay time] <watch directory> <run command>")
-		fmt.Println("Usage: go run main.go ../Hello \"go run ../Hello/main.go\"")
-		fmt.Println("Usage: go run main.go -k=8080,3000 -t=4000 ../Hello \"go run ../Hello/main.go\"")
+		fmt.Println("Usage: go run main.go example \"go run example/server.go\"")
+		fmt.Println("Usage: go run main.go -k=8080,3000 -t=4000 example \"go run example/server.go\"")
 		fmt.Println()
 		fmt.Println("Usage: rerun [-k optional kill ports] [-t optional rerun delay time] <watch directory> <run command>")
-		fmt.Println("Usage: rerun -k=8080,3000 -t=4000 ../Hello \"go run ../Hello/main.go\"")
-		fmt.Println("Usage: rerun ../Hello \"go run ../Hello/main.go\"")
+		fmt.Println("Usage: rerun example \"go run example/server.go\"")
+		fmt.Println("Usage: rerun -k=8080,3000 -t=4000 example \"go run example/server.go\"")
 		return
 	}
 
@@ -60,89 +55,23 @@ func main() {
 		}
 	}
 
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer watcher.Close()
-
-	done := make(chan os.Signal)
-	defer close(done)
-	signal.Notify(done, syscall.SIGINT, os.Kill, os.Interrupt)
+	rerun := types.ReRun{}
 
 	var wg sync.WaitGroup
-	wg.Add(1)
 	defer wg.Wait()
 
-	if rerunTimer >= time.Millisecond*100 {
-		helper.TickerFunction(
-			done,
-			rerunTimer,
-			func() {
-				runCommand(command, killPorts, rerunTimer)
-			},
-		)
-	}
+	stdOutLogs := make(map[string][]types.LogEntry)
+	stdErrLogs := make(map[string][]types.LogEntry)
 
-	go func() {
-		defer wg.Done()
-		runCommand(command, killPorts, rerunTimer)
-		for {
-			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
+	spider := spider.NewSpider(directory, stdOutLogs, stdErrLogs)
+	spider.StartSpider(&wg)
 
-				if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
-					fmt.Println("modified file:", event.Name)
-					runCommand(command, killPorts, rerunTimer)
-				}
-
-				if event.Op&fsnotify.Create == fsnotify.Create {
-					info, err := os.Stat(event.Name)
-					if err == nil && info.IsDir() {
-						err = helper.AddRecursive(watcher, event.Name)
-						if err != nil {
-							fmt.Println("error adding directory:", err)
-						}
-					}
-				}
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				fmt.Println("error:", err)
-			case <-done:
-				if err := watcher.Close(); err != nil {
-					fmt.Println("Failed to stop watcher")
-				}
-				return
-			}
-		}
-	}()
-
-	err = helper.AddRecursive(watcher, directory)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func runCommand(command string, killPort []int, t time.Duration) {
-	helper.ClearScreen()
-
-	atomic.AddInt32(&counter, 1)
-	fmt.Printf("\n%d %s [Rerun:%s]\n\n", atomic.LoadInt32(&counter), command, t)
-
-	helper.KillProcess(shellProcess)
-	helper.KillProcess(childProcess)
-	helper.PortKiller(killPort)
-
-	cmd := helper.ExecCommand(command)
-
-	helper.Spinner(time.Millisecond * 400)
-
-	helper.CopyProcess(cmd, &shellProcess, &childProcess)
-
-	fmt.Printf("...\n\n")
+	w := watcher.NewWatcher(
+		&rerun,
+		command, rerunTimer, killPorts, directory,
+		spider,
+		stdOutLogs,
+		stdErrLogs,
+	)
+	w.StartWatcher()
 }

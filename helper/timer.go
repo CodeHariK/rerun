@@ -3,20 +3,31 @@ package helper
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
-func TickerFunction(done chan os.Signal, t time.Duration, fn func()) {
+func TickerFunction(t time.Duration, fn func()) {
+	done := make(chan os.Signal)
+	signal.Notify(done, syscall.SIGINT, os.Kill, os.Interrupt)
+
+	// con, cancel := context.WithCancel()
+
 	go func() {
 		ticker := time.NewTicker(t)
-		defer ticker.Stop()
+
 		for {
 			select {
 			case <-ticker.C:
 				fn()
-			case s := <-done:
-				fmt.Println("Stop Timer")
-				done <- s
+			// case <-con.Done():
+			// 	fmt.Println("Timer stopped")
+			// 	ticker.Stop()
+			// 	return
+			case <-done:
+				fmt.Println("Timer stopped")
+				ticker.Stop()
 				return
 			}
 		}
