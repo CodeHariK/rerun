@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"flag"
 	"fmt"
 	"log"
@@ -13,7 +14,10 @@ import (
 	"github.com/codeharik/rerun/watcher"
 )
 
-const version = "v0.1.2"
+const version = "v0.1.3"
+
+//go:embed spider.html
+var spiderhtml embed.FS
 
 func main() {
 	flagKillPorts := flag.String("k", "", "Optional Kill Ports")
@@ -63,7 +67,7 @@ func main() {
 	stdOutLogs := make(map[string][]types.LogEntry)
 	stdErrLogs := make(map[string][]types.LogEntry)
 
-	spider := spider.NewSpider(directory, stdOutLogs, stdErrLogs)
+	spider := spider.NewSpider(directory, spiderhtml, stdOutLogs, stdErrLogs)
 	spider.StartSpider(&wg)
 
 	w := watcher.NewWatcher(

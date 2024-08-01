@@ -19,7 +19,7 @@ import (
 
 func createServer(s *Spider) *http.Server {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", handlePage)
+	mux.HandleFunc("/", s.handlePage)
 	mux.HandleFunc("GET /file", getFileHandler)
 	mux.HandleFunc("POST /save", saveFileHandler)
 
@@ -303,12 +303,16 @@ func (s *Spider) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
-func handlePage(w http.ResponseWriter, r *http.Request) {
-	// w.Header().Set("Content-Type", "text/html")
-	// w.WriteHeader(200)
-	// fmt.Fprint(w, htmlContent)
+func (s *Spider) handlePage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(200)
 
-	http.ServeFile(w, r, "spider.html")
+	spiderhtmlBytes, err := s.spiderhtml.ReadFile("spider.html")
+	if err != nil {
+		http.Error(w, "Failed to read openapi.json", http.StatusInternalServerError)
+		return
+	}
+	w.Write(spiderhtmlBytes)
 }
 
 type SaveRequest struct {

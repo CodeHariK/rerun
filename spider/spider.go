@@ -2,6 +2,7 @@ package spider
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"net/http"
 	"os"
@@ -24,6 +25,8 @@ type Connection struct {
 type Spider struct {
 	directory string
 
+	spiderhtml embed.FS
+
 	mu         sync.Mutex
 	conns      map[string]Connection
 	addConn    chan Connection
@@ -39,11 +42,13 @@ type Spider struct {
 
 func NewSpider(
 	directory string,
+	spiderhtml embed.FS,
 	stdOutLogs map[string][]types.LogEntry,
 	stdErrLogs map[string][]types.LogEntry,
 ) *Spider {
 	return &Spider{
-		directory: directory,
+		directory:  directory,
+		spiderhtml: spiderhtml,
 
 		conns:      make(map[string]Connection),
 		addConn:    make(chan Connection),
