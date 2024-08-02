@@ -54,30 +54,14 @@
         text-align: center;
         text-transform: uppercase;
         transition: 0.5s;
-        background-size: 200% auto;
         color: white;
+        background: black;
         border: none;
-        box-shadow: 0 0 20px #eee;
         border-radius: 5px;
     }
 
-    .btn:hover {
-        background-position: right center;
-    }
-
-    .btn-1 {
-        background-image: linear-gradient(to right, #f6d365 0%, #fda085 51%, #f6d365 100%);
-    }
-
-    .btn-2 {
-        background-image: linear-gradient(to right, #fbc2eb 0%, #a6c1ee 51%, #fbc2eb 100%);
-    }
-
-    .btn-3 {
-        background-image: linear-gradient(to right, #84fab0 0%, #8fd3f4 51%, #84fab0 100%);
-    }
-
-    #commandInput {
+    #commandInput,
+    #pageUrlInput {
         flex: 12;
         padding: 10px;
         font-size: 16px;
@@ -88,15 +72,18 @@
         transition: border-color 0.3s;
     }
 
-    #commandInput:focus {
+    #commandInput:focus,
+    #pageUrlInput:focus {
         border-color: #007bff;
     }
 
-    #commandInput::placeholder {
+    #commandInput::placeholder,
+    #pageUrlInput::placeholder {
         color: #999;
     }
 
-    #commandBox {
+    #commandBox,
+    #pageUrl {
         display: flex;
         align-items: center;
     }
@@ -166,13 +153,16 @@
 
 <body>
     <div id="treeview" class="split split-horizontal">
-        <button class="btn btn-3" onclick="saveContent()">Save</button>
+        <button class="btn" onclick="saveContent()">Save {{.WatchPort}}</button>
         <ul id="file-tree" class="file-tree"></ul>
     </div>
 
     <div id="codeeditor" class="split split-horizontal"></div>
 
     <div id="outputWindow" class="split split-horizontal">
+        <div id="pageUrl" class="split">
+            <input type="text" id="pageUrlInput" placeholder="Go to localhost:8080">
+        </div>
         <iframe id="contentFrame" src=""></iframe>
     </div>
 
@@ -186,7 +176,7 @@
 
         <div id="commandBox" class="split">
             <input type="text" id="commandInput" placeholder="Type command and press Enter">
-            <button class="btn btn-1" onclick="cancelTerminal()">Cancel</button>
+            <button class="btn" onclick="cancelTerminal()">Cancel</button>
         </div>
     </div>
 
@@ -231,7 +221,7 @@
     });
 
     Split(['#treeview', '#codeeditor', '#outputWindow', '#consoleBox'], {
-        sizes: [10, 30, 30, 30],
+        sizes: [8, 36, 36, 20],
         minSize: 2,
         gutterSize: 3,
         cursor: 'col-resize',
@@ -241,6 +231,14 @@
         onDragEnd: function (sizes) {
             localStorage.setItem('split-sizes', JSON.stringify(sizes))
         },
+    })
+
+    Split(['#pageUrl', '#contentFrame'], {
+        direction: 'vertical',
+        sizes: [5, 95],
+        minSize: 2,
+        gutterSize: 3,
+        cursor: 'row-resize'
     })
 
     Split(['#statusPane', '#logsPane', "#terminal", "#commandBox"], {
@@ -260,8 +258,23 @@
     let socket;
     let retryCount = 0;
     const maxRetries = 5;
-    const testUrl = 'http://localhost:8080';
-    const iframeUrl = 'http://localhost:8080/docs';
+    let currentFile;
+
+    let oriIrameUrl = 'http://localhost:9753/redirect';
+    let iframeUrl = oriIrameUrl;
+    const storedIframeUrl = localStorage.getItem('iframeUrl');
+    if (storedIframeUrl) {
+        iframeUrl = storedIframeUrl
+    }
+
+    let pageurl = iframeUrl.replace(oriIrameUrl, "")
+    document.getElementById('pageUrlInput').value = pageurl;
+
+    currentFile = localStorage.getItem("currentFile")
+    fetchFile(currentFile)
+
+    //const testUrl = 'http://localhost:8080';
+    const testUrl = iframeUrl;
     const logsUrl = 'http://localhost:9753/logs/';
 
     async function checkServerStatus() {
@@ -271,9 +284,25 @@
         const tryRequest = async () => {
             try {
                 const response = await fetch(testUrl, { method: 'HEAD' });
-                if (response) {
+                if (response.status == 200) {
                     console.log('Server is alive');
-                    document.getElementById('contentFrame').src = iframeUrl
+                    let iframeElement = document.getElementById('contentFrame')
+
+                    iframeElement.onload = function () {
+                        Array.from(document.getElementById('contentFrame').contentDocument.getElementsByTagName("a"))
+                            .forEach((a) => {
+                                a.href = a.href.replace(9753, "9753/redirect")
+                                a.addEventListener("click", (e) => {
+                                    iframeUrl = a.href
+                                    localStorage.setItem('iframeUrl', iframeUrl);
+                                    let pageurl = iframeUrl.replace(oriIrameUrl, "")
+                                    document.getElementById('pageUrlInput').value = pageurl;
+                                })
+                            })
+                    }
+
+                    iframeElement.src = iframeUrl
+
                     return;
                 }
             } catch (error) {
@@ -285,7 +314,7 @@
                 interval *= 2;
                 setTimeout(tryRequest, interval);
             } else {
-                console.log('Server did not respond after 5 attempts');
+                console.log('Server did not respond, Attempt:', attempts);
             }
         };
 
@@ -322,6 +351,7 @@
                 console.log(iframeUrl)
                 checkServerStatus();
                 statusRender(message)
+                fetchFile(currentFile)
             }
 
             append(message, "SPIDER:Console:Output:", terminal, false)
@@ -374,17 +404,27 @@
         box.scrollTop = box.scrollHeight;
     }
 
-    const input = document.getElementById('commandInput');
-    input.addEventListener('keypress', function (event) {
+    const commandInputElement = document.getElementById('commandInput');
+    commandInputElement.addEventListener('keypress', function (event) {
         if (event.key === 'Enter') {
-            const command = input.value;
+            const command = commandInputElement.value;
             if (socket.readyState === WebSocket.OPEN) {
                 append(command, "", terminal, false)
                 socket.send("SPIDER:Console:" + command);
-                input.value = '';
+                commandInputElement.value = '';
             } else {
                 console.log("WebSocket is not open.");
             }
+        }
+    });
+
+    const pageUrlInputElement = document.getElementById('pageUrlInput');
+    pageUrlInputElement.addEventListener('keypress', function (event) {
+        if (event.key === 'Enter') {
+            let pageurl = pageUrlInputElement.value.replace(oriIrameUrl, "")
+            iframeUrl = oriIrameUrl + pageurl
+            document.getElementById('contentFrame').src = iframeUrl
+            localStorage.setItem('iframeUrl', iframeUrl);
         }
     });
 
@@ -407,6 +447,10 @@
             }
 
             const data = await response.text();
+
+            if (editor.getValue() == data) {
+                return
+            }
 
             editor.setValue(data);
             var fileExtension = filePath.substr(filePath.lastIndexOf('.')).toLowerCase();
@@ -445,8 +489,6 @@
     }
     window.saveContent = saveContent;
 
-    let currentFile;
-
     function generateFileTreeHTML(node, path = '') {
         const ul = document.createElement('ul');
         const currentPath = path ? `${path}/${node.name}` : node.name;
@@ -474,6 +516,7 @@
             li.querySelector('span').addEventListener('click', () => {
                 fetchFile(currentPath)
                 currentFile = currentPath
+                localStorage.setItem("currentFile", currentFile)
                 console.log(currentPath);
             });
             ul.appendChild(li);
@@ -514,7 +557,6 @@
             for (let i = 1; i <= num; i++) {
                 const button = document.createElement('button');
                 button.innerText = i;
-                button.classList.add("btn", "btn-3");
                 button.addEventListener('click', async function (event) {
                     try {
                         const response = await fetch(logsUrl + i, { method: 'GET' });

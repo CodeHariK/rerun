@@ -13,7 +13,7 @@ import (
 func KillProcess(process *os.Process) {
 	if process != nil {
 		if err := process.Kill(); err != nil {
-			fmt.Printf("Failed to kill process: %v", err)
+			fmt.Printf("Failed to kill process: %v\n", err)
 		} else {
 			fmt.Printf("Killed process with PID: %d\n", process.Pid)
 		}
@@ -26,7 +26,7 @@ func PortKiller(killPorts []int) {
 		fmt.Printf("Kill any process using port %d\n", i)
 		killCmd := exec.CommandContext(context.Background(), "sh", "-c", fmt.Sprintf("lsof -ti tcp:%d | xargs kill -9", i))
 		if err := killCmd.Run(); err != nil {
-			fmt.Printf("Failed to kill process on port 8080: %v", err)
+			fmt.Printf("Failed to kill process on port 8080: %v\n", err)
 		}
 	}
 }

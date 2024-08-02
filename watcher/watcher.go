@@ -164,7 +164,7 @@ func (w *watcher) runCommand() {
 
 	a := atomic.LoadInt32(&w.counter)
 
-	fmt.Printf("\n%d %s [Rerun:%s] SPIDER:http://localhost:9753\n\n", a, w.command, w.reRunDuration)
+	fmt.Printf("\n%d %s [Rerun:%s] SPIDER: http://localhost:9753/rerun\n\n", a, w.command, w.reRunDuration)
 
 	w.spider.BroadcastMessage(fmt.Sprintf("ReRun:%d", a), spider.Connection{ID: "SPIDER"})
 

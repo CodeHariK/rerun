@@ -8,22 +8,23 @@
 * `Customizable`: Set specific ports to kill if needed.
 
 ```go
-ReRun: Monitor a directory and automatically execute a command when directory change, or rerun the command on a set interval.
+ReRun v0.1.4 : Monitor a directory and automatically execute a command when directory change, or rerun the command on a set interval.
+  -k string
+        Optional Kill Ports
+  -t int
+        Optional Rerun Delay Time in seconds [Min 1s] (default -1)
+  -w int
+        Optional Watch port (default -1)
 
--k string
-      Optional Kill Ports
--t int
-      Optional Rerun Delay Time in Milliseconds [Min 100] (default -1)
+SPIDER : http://localhost:9753/rerun
 
-SPIDER : http://localhost:9753
+Usage: go run main.go [-w Watch Ports] [-k Kill Ports] [-t Rerun Delay Time] <watch directory> <run command>
+Usage: go run main.go -w=8080 example "go run example/server.go"
+Usage: go run main.go -w=8080 -k=8080,3000 -t=30 example "go run example/server.go"
 
-Usage: go run main.go [-k optional kill ports] [-t optional rerun delay time] <watch directory> <run command>
-Usage: go run main.go example "go run example/server.go"
-Usage: go run main.go -k=8080,3000 -t=4000 example "go run example/server.go"
-
-Usage: rerun [-k optional kill ports] [-t optional rerun delay time] <watch directory> <run command>
-Usage: rerun example "go run example/server.go"
-Usage: rerun -k=8080,3000 -t=4000 example "go run example/server.go"
+Usage: rerun [-w Watch Ports] [-k Kill Ports] [-t Rerun Delay Time] <watch directory> <run command>
+Usage: rerun -w=8080 example "go run example/server.go"
+Usage: rerun -w=8080 -k=8080,3000 -t=30 example "go run example/server.go"
 ```
 ## Installation
 

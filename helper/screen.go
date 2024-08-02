@@ -30,7 +30,7 @@ func Spinner(t time.Duration) {
 		case <-timeUp:
 			return
 		default:
-			for _, c := range `/+\-` {
+			for _, c := range `....` {
 				fmt.Printf("\r%c", c)
 				time.Sleep(time.Millisecond * 30)
 			}

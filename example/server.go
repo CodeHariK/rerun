@@ -7,14 +7,26 @@ import (
 
 func main() {
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(200)
+
+		fmt.Println("GET /")
+		fmt.Fprintln(w, `
+			<body style="background:#e9e0ff;color:purple;text-align: center;align-content: center;font: 30px monospace;">
+				<a href="/docs">Go to Docs</a>
+			</body>`)
+	})
+
 	mux.HandleFunc("GET /docs", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(200)
 
-		fmt.Println("GET docs")
+		fmt.Println("GET /docs")
 		fmt.Fprintln(w, `
 			<body style="background:white;color:purple;text-align: center;align-content: center;font: 30px monospace;">
-				Hello
+				<a href="/">Go to Home</a>
 			</body>`)
 	})
 
