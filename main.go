@@ -14,7 +14,7 @@ import (
 	"github.com/codeharik/rerun/watcher"
 )
 
-const version = "v0.1.5"
+const version = "v0.1.6"
 
 //go:embed ui
 var spiderhtml embed.FS
@@ -70,6 +70,8 @@ func main() {
 
 	spider := spider.NewSpider(directory, spiderhtml, *watchPort, stdOutLogs, stdErrLogs)
 	spider.StartSpider(&wg)
+
+	helper.OpenInBrower("http://localhost:9753/ui")
 
 	w := watcher.NewWatcher(
 		&rerun,

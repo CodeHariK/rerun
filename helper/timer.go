@@ -9,7 +9,7 @@ import (
 )
 
 func TickerFunction(t time.Duration, fn func()) {
-	done := make(chan os.Signal)
+	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, os.Kill, os.Interrupt)
 
 	// con, cancel := context.WithCancel()
