@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"text/template"
 	"time"
 
 	"github.com/codeharik/rerun/helper"
@@ -15,9 +14,9 @@ import (
 	"github.com/codeharik/rerun/watcher"
 )
 
-const version = "v0.1.4"
+const version = "v0.1.5"
 
-//go:embed spider.html
+//go:embed ui
 var spiderhtml embed.FS
 
 func main() {
@@ -33,7 +32,7 @@ func main() {
 		fmt.Printf("ReRun %s : Monitor a directory and automatically execute a command when directory change, or rerun the command on a set interval.\n", version)
 		flag.PrintDefaults()
 		fmt.Println()
-		fmt.Println("SPIDER : http://localhost:9753/rerun")
+		fmt.Println("SPIDER : http://localhost:9753/ui")
 		fmt.Println()
 		fmt.Println("Usage: go run main.go [-w Watch Ports] [-k Kill Ports] [-t Rerun Delay Time] <watch directory> <run command>")
 		fmt.Println("Usage: go run main.go -w=8080 example \"go run example/server.go\"")
@@ -69,13 +68,7 @@ func main() {
 	stdOutLogs := make(map[string][]types.LogEntry)
 	stdErrLogs := make(map[string][]types.LogEntry)
 
-	// Parse the embedded template file
-	tmpl, err := template.ParseFS(spiderhtml, "spider.html")
-	if err != nil {
-		panic(err)
-	}
-
-	spider := spider.NewSpider(directory, tmpl, *watchPort, stdOutLogs, stdErrLogs)
+	spider := spider.NewSpider(directory, spiderhtml, *watchPort, stdOutLogs, stdErrLogs)
 	spider.StartSpider(&wg)
 
 	w := watcher.NewWatcher(

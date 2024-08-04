@@ -2,6 +2,7 @@ package spider
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,7 +10,6 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-	"text/template"
 	"time"
 
 	"github.com/codeharik/rerun/types"
@@ -24,7 +24,7 @@ type Connection struct {
 
 type Spider struct {
 	directory  string
-	spiderhtml *template.Template
+	spiderhtml embed.FS
 	watchPort  int
 
 	mu         sync.Mutex
@@ -42,7 +42,7 @@ type Spider struct {
 
 func NewSpider(
 	directory string,
-	spiderhtml *template.Template,
+	spiderhtml embed.FS,
 	watchPort int,
 	stdOutLogs map[string][]types.LogEntry,
 	stdErrLogs map[string][]types.LogEntry,

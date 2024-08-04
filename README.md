@@ -16,7 +16,7 @@ ReRun v0.1.4 : Monitor a directory and automatically execute a command when dire
   -w int
         Optional Watch port (default -1)
 
-SPIDER : http://localhost:9753/rerun
+SPIDER : http://localhost:9753/ui
 
 Usage: go run main.go [-w Watch Ports] [-k Kill Ports] [-t Rerun Delay Time] <watch directory> <run command>
 Usage: go run main.go -w=8080 example "go run example/server.go"
