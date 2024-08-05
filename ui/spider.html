@@ -20,22 +20,24 @@
     .dark #statusPane,
     .dark #terminal,
     .dark #treeview,
-    .dark input {
+    .dark #commandBox,
+    .dark #outputWindow {
         color: white;
-        background: rgb(49, 9, 52);
+        background: #282c34;
     }
 
-    .dark gutter {
-        background: white;
+    .dark .gutter {
+        background: #3a3e47;
     }
 
+    .dark input,
     .dark .btn {
         background: #d9d9f2;
         color: #464646;
     }
 
     input {
-        margin: 1px;
+        margin: 5px;
     }
 
     iframe {
@@ -97,14 +99,9 @@
         transition: border-color 0.3s;
     }
 
-    #commandInput:focus,
-    #pageUrlInput:focus {
-        border-color: #007bff;
-    }
-
     #commandInput::placeholder,
     #pageUrlInput::placeholder {
-        color: #999;
+        color: #5a5a5a;
     }
 
     #commandBox,
@@ -150,11 +147,6 @@
         padding: 0px;
     }
 
-    .file-list ul {
-        list-style-type: none;
-        padding-left: 6px;
-    }
-
     .folder-root>span.folder-name {
         font-weight: bold;
         cursor: pointer;
@@ -169,9 +161,23 @@
         display: block;
     }
 
+    .tree-highlight {
+        background: #e572fa52;
+        padding: 3px;
+        margin: 3px;
+        border-radius: 4px;
+    }
+
+    .file-list ul {
+        list-style-type: none;
+        padding-left: 6px;
+        display: flex;
+    }
+
     .file-list li span {
         cursor: pointer;
         white-space: nowrap;
+        user-select: none;
     }
 </style>
 

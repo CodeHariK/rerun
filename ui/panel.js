@@ -19,6 +19,7 @@ export function statusRender(message) {
         for (let i = 1; i <= num; i++) {
             const button = document.createElement('button');
             button.innerText = i;
+            button.classList += "btn"
             button.addEventListener('click', async function (event) {
                 try {
                     const response = await fetch(logsUrl + i, { method: 'GET' });

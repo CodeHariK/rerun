@@ -8,7 +8,7 @@
 * `Customizable`: Set specific ports to kill if needed.
 
 ```go
-ReRun v0.1.4 : Monitor a directory and automatically execute a command when directory change, or rerun the command on a set interval.
+ReRun v0.1.7 : Monitor a directory and automatically execute a command when directory change, or rerun the command on a set interval.
   -k string
         Optional Kill Ports
   -t int

@@ -6,7 +6,7 @@ export function generateFileTreeHTML(node, path = '') {
 
     if (node.is_dir) {
         const li = document.createElement('li');
-        li.innerHTML = `<span class="folder-name" data-open="true">&#11153; ${node.name}</span>`;
+        li.innerHTML = `<span class="folder-name" data-open="true">🌸 ${node.name}</span>`;
         ul.appendChild(li);
 
         const childrenUl = document.createElement('ul');
@@ -17,7 +17,7 @@ export function generateFileTreeHTML(node, path = '') {
 
         li.querySelector('span.folder-name').addEventListener('click', function () {
             const isOpen = this.getAttribute('data-open') === 'true';
-            this.innerHTML = isOpen ? `&#9654; ${node.name}` : `&#11153; ${node.name}`;
+            this.innerHTML = isOpen ? `🔥 ${node.name}` : `🌸 ${node.name}`;
             this.setAttribute('data-open', !isOpen);
             li.querySelector('ul').style.display = isOpen ? 'none' : 'block';
         });
@@ -29,6 +29,12 @@ export function generateFileTreeHTML(node, path = '') {
             window.currentFile = currentPath
             localStorage.setItem("currentFile", currentPath)
             console.log(currentPath);
+
+            var items = document.querySelectorAll('.file-list li');
+            items.forEach(function (item) {
+                item.classList.remove('tree-highlight');
+            });
+            li.classList.add('tree-highlight');
         });
         ul.appendChild(li);
     }

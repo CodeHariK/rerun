@@ -95,11 +95,13 @@ func ParseTemplate(templatesFS embed.FS, name string) (*template.Template, error
 }
 
 func GetTemplate(templatesFS embed.FS, name string) (*template.Template, error) {
+	l.RLock()
 	if cacheEntry, ok := cache[name]; ok {
 		if cacheEntry.err != nil {
 			return nil, cacheEntry.err
 		}
 		return cacheEntry.tmpl, nil
 	}
+	l.RUnlock()
 	return ParseTemplate(templatesFS, name)
 }
