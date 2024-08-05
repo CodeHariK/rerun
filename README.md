@@ -8,13 +8,7 @@
 * `Customizable`: Set specific ports to kill if needed.
 
 ```go
-ReRun v0.1.7 : Monitor a directory and automatically execute a command when directory change, or rerun the command on a set interval.
-  -k string
-        Optional Kill Ports
-  -t int
-        Optional Rerun Delay Time in seconds [Min 1s] (default -1)
-  -w int
-        Optional Watch port (default -1)
+ReRun v0.1.8 : Monitor a directory and automatically execute a command when directory change, or rerun the command on a set interval.
 
 SPIDER : http://localhost:9753/ui
 
