@@ -14,7 +14,7 @@ import (
 	"github.com/codeharik/rerun/watcher"
 )
 
-const version = "v0.1.7"
+var version string
 
 //go:embed ui
 var spiderhtml embed.FS
