@@ -8,7 +8,10 @@
 * `Customizable`: Set specific ports to kill if needed.
 
 ```go
-ReRun v0.1.8 : Monitor a directory and automatically execute a command when directory change, or rerun the command on a set interval.
+go: downloading github.com/fsnotify/fsnotify v1.7.0
+go: downloading github.com/gorilla/websocket v1.5.3
+go: downloading golang.org/x/sys v0.22.0
+ReRun v0.1.9 : Monitor a directory and automatically execute a command when directory change, or rerun the command on a set interval.
   -k string
     	Optional Kill Ports
   -t int
