@@ -43,7 +43,8 @@ jobs:
               output_file="${output_file}.exe"
             fi
 
-            CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} go build -ldflags "-X main.version=${VERSION}" -o $output_file ./main.go
+            go run tools/generate.go -v=$VERSION
+            CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} go build -o $output_file .
 
             mkdir -p release/${GOOS}/${GOARCH}
             mv $output_file release/${GOOS}/${GOARCH}/

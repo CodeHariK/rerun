@@ -14,8 +14,6 @@ import (
 	"github.com/codeharik/rerun/watcher"
 )
 
-var version string
-
 //go:embed ui
 var spiderhtml embed.FS
 
@@ -29,7 +27,7 @@ func main() {
 	nonFlagArgs := flag.Args()
 
 	if len(nonFlagArgs) < 2 {
-		fmt.Printf("ReRun %s : Monitor a directory and automatically execute a command when directory change, or rerun the command on a set interval.\n", version)
+		fmt.Printf("ReRun %s : Monitor a directory and automatically execute a command when directory change, or rerun the command on a set interval.\n", Version)
 		flag.PrintDefaults()
 		fmt.Println()
 		fmt.Println("SPIDER : http://localhost:9753/ui")

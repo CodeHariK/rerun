@@ -9,6 +9,12 @@
 
 ```go
 ReRun v0.1.8 : Monitor a directory and automatically execute a command when directory change, or rerun the command on a set interval.
+  -k string
+    	Optional Kill Ports
+  -t int
+    	Optional Rerun Delay Time in seconds [Min 1s] (default -1)
+  -w int
+    	Optional Watch port (default -1)
 
 SPIDER : http://localhost:9753/ui
 
@@ -19,10 +25,11 @@ Usage: go run main.go -w=8080 -k=8080,3000 -t=30 example "go run example/server.
 Usage: rerun [-w Watch Ports] [-k Kill Ports] [-t Rerun Delay Time] <watch directory> <run command>
 Usage: rerun -w=8080 example "go run example/server.go"
 Usage: rerun -w=8080 -k=8080,3000 -t=30 example "go run example/server.go"
+
 ```
 ## Installation
 
 ```bash
 go get github.com/codeharik/rerun
-go install github.com/codeharik/rerun
+go install github.com/codeharik/rerun@latest
 ```

@@ -14,5 +14,5 @@ ${MESSAGE}
 
 ```bash
 go get github.com/codeharik/rerun
-go install github.com/codeharik/rerun
+go install github.com/codeharik/rerun@latest
 ```

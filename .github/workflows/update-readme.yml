@@ -30,14 +30,7 @@ jobs:
         run: |
             VERSION=${GITHUB_REF#refs/tags/}
             echo $VERSION
-            go build -ldflags "-X main.version=${VERSION}" -o rerun ./main.go
-            ./rerun >> message.txt
-
-      - name: Update README with envsubst
-        run: |
-          export MESSAGE=$(cat message.txt)
-          envsubst < .github/READ.tmpl > README.md
-          cat README.md
+            go run tools/generate.go -v=$VERSION
 
       - name: Commit and push changes
         run: |
@@ -45,8 +38,8 @@ jobs:
           git checkout main
           git pull origin main
           VERSION=${GITHUB_REF#refs/tags/}
-          git add README.md
-          git commit -m "Update README with latest message from main.go ${VERSION}"
+          git add .
+          git commit -m "Update README ${VERSION}"
           git push origin main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
